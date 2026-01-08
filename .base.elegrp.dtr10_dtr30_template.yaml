@@ -1,12 +1,30 @@
+substitutions:
+  log_level: "INFO"
+  indicator_brightness_when_offline_percent: '100'
+  default_indicator_on_with_dimmer: 'false'
+  default_change_indicator_brightness_with_dimmer: 'false'
+  default_indicator_brightness_when_on: '100'
+  default_indicator_brightness_when_off: '60'
+
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
-    name: elegrp.dtr10_dtr30_template
-    version: "1.0"
+    name: 'elegrp.DTR10-DTR30'
+    version: "1.1"
 
 bk72xx:
   board: cb2s
+
+globals:
+  - id: indicator_on_with_dimmer_state
+    type: bool
+    restore_value: true
+    initial_value: ${default_indicator_on_with_dimmer}
+  - id: change_indicator_brightness_with_dimmer_state
+    type: bool
+    restore_value: true
+    initial_value: ${default_change_indicator_brightness_with_dimmer}
 
 # Enable Home Assistant API
 api:
@@ -55,6 +73,7 @@ web_server:
   port: 80
   version: 3
   id: id_web_server
+  ota: false
 
 uart:
   rx_pin: RX1
@@ -139,12 +158,73 @@ switch:
     entity_category: config
     web_server:
       sorting_weight: 11
+  - platform: template
+    name: "Indicator on with dimmer"
+    id: indicator_on_with_dimmer_toggle
+    # web_server:
+    #     sorting_weight: 103
+    entity_category: config
+    disabled_by_default: true
+    restore_mode: DISABLED
+    lambda: "return id(indicator_on_with_dimmer_state) == true;"
+    turn_on_action:
+      - globals.set:
+          id: indicator_on_with_dimmer_state
+          value: "true"
+    turn_off_action:
+      - globals.set:
+          id: indicator_on_with_dimmer_state
+          value: "false"
+      - globals.set:
+          id: change_indicator_brightness_with_dimmer_state
+          value: "false"
+  - platform: template
+    name: "Indicator changes brightness with dimmer"
+    id: change_indicator_brightness_with_dimmer_toggle
+    # web_server:
+    #     sorting_weight: 103
+    entity_category: config
+    disabled_by_default: true
+    restore_mode: DISABLED
+    lambda: "return id(change_indicator_brightness_with_dimmer_state) == true;"
+    turn_on_action:
+      - globals.set:
+          id: change_indicator_brightness_with_dimmer_state
+          value: "true"
+    turn_off_action:
+      - globals.set:
+          id: change_indicator_brightness_with_dimmer_state
+          value: "false"
+          
 
 number:
+  # Non-Tuya Configuration Numbers
+  - platform: template
+    name: "Indicator Brightness when on"
+    id: indicator_brightness_when_on
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    entity_category: config
+    disabled_by_default: true
+    restore_value: true
+    initial_value: ${default_indicator_brightness_when_on}
+  - platform: template
+    name: "Indicator Brightness when off"
+    id: indicator_brightness_when_off
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    entity_category: config
+    disabled_by_default: true
+    restore_value: true
+    initial_value: ${default_indicator_brightness_when_off}
   # Allows for setting brightness value without turning the light ON
   - platform: tuya
     number_datapoint: 2
-    name: "Dimmer Brightness control"
+    name: "Dimmer Brightness"
     id: dimmer_brightness_control
     min_value: 1
     max_value: 100
@@ -255,17 +335,64 @@ light:
     name: "Dimmer"
     id: dimmer
     dimmer_datapoint: 2
-    min_value_datapoint: 2
+    min_value_datapoint: 3
     max_value: 1000
     switch_datapoint: 1
     web_server:
       sorting_weight: -1
+    on_turn_on:
+      then:
+        if:
+          condition:
+            and:
+              - lambda: |-
+                  return id(indicator_on_with_dimmer_state) == true;
+              - lambda: |-
+                  return id(change_indicator_brightness_with_dimmer_state) == true;
+          then:
+            - number.set:
+                id: indicator_brightness
+                value: !lambda |-
+                  return id(indicator_brightness_when_on).state;
+    on_turn_off:
+      then:
+        if:
+          condition:
+            and:
+              - lambda: |-
+                  return id(indicator_on_with_dimmer_state) == true;
+              - lambda: |-
+                  return id(change_indicator_brightness_with_dimmer_state) == true;
+          then:
+            - delay: 500ms
+            - number.set:
+                id: indicator_brightness
+                value: !lambda |-
+                  return id(indicator_brightness_when_off).state;
 
 interval:
+  # Normally indicator turns off when dimmer switch turns on. This forces the indicator to stay on.
+  - interval: 5s
+    startup_delay: 5s
+    then:
+      - if:
+          condition:
+            and:
+              - lambda: |-
+                  return id(indicator_on_with_dimmer_state) == true;
+          then:
+            - lambda: |-
+                id(id_tuya_device).force_set_integer_datapoint_value(101, id(indicator_brightness).state);
   # Workaround for rare occasions whenre indicator brightness is not being taken in by TuyaMCU
   - interval: 1min
     startup_delay: 1min
     then:
-      - lambda: |-
-          id(id_tuya_device).force_set_integer_datapoint_value(101, id(indicator_brightness).state);
-          
+      - if:
+          condition:
+            and:
+              - lambda: |-
+                  return id(indicator_on_with_dimmer_state) == false;
+              - light.is_off: dimmer
+          then:
+            - lambda: |-
+                id(id_tuya_device).force_set_integer_datapoint_value(101, id(indicator_brightness).state);
