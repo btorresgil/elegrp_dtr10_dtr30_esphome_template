@@ -10,8 +10,17 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
-    name: 'elegrp.DTR10-DTR30'
-    version: "1.1"
+    name: "elegrp.DTR10-DTR30"
+    version: "1.2"
+  on_boot: 
+    then:
+      - delay: 3s
+      - number.set:
+          id: dimmer_brightness_control
+          value: 100
+      # Set brightness to highest setting
+      - lambda: |-
+          id(id_tuya_device).force_set_integer_datapoint_value(2, 1000);
 
 bk72xx:
   board: cb2s
@@ -138,7 +147,7 @@ text_sensor:
 
 button:
   - platform: restart
-    name: "Device Restart"
+    name: "Restart Device"
     id: id_button_device_restart
     web_server:
       sorting_weight: 300
@@ -159,7 +168,7 @@ switch:
     web_server:
       sorting_weight: 11
   - platform: template
-    name: "Indicator on with dimmer"
+    name: "Indicator On With Dimmer"
     id: indicator_on_with_dimmer_toggle
     # web_server:
     #     sorting_weight: 103
@@ -179,7 +188,7 @@ switch:
           id: change_indicator_brightness_with_dimmer_state
           value: "false"
   - platform: template
-    name: "Indicator changes brightness with dimmer"
+    name: "Indicator Changes Brightness With Dimmer"
     id: change_indicator_brightness_with_dimmer_toggle
     # web_server:
     #     sorting_weight: 103
@@ -200,7 +209,7 @@ switch:
 number:
   # Non-Tuya Configuration Numbers
   - platform: template
-    name: "Indicator Brightness when on"
+    name: "Indicator Brightness When On"
     id: indicator_brightness_when_on
     min_value: 0
     max_value: 100
@@ -211,7 +220,7 @@ number:
     restore_value: true
     initial_value: ${default_indicator_brightness_when_on}
   - platform: template
-    name: "Indicator Brightness when off"
+    name: "Indicator Brightness When Off"
     id: indicator_brightness_when_off
     min_value: 0
     max_value: 100
