@@ -1,18 +1,18 @@
 substitutions:
   log_level: "INFO"
-  indicator_brightness_when_offline_percent: '100'
-  default_indicator_on_with_dimmer: 'false'
-  default_change_indicator_brightness_with_dimmer: 'false'
-  default_indicator_brightness_when_on: '100'
-  default_indicator_brightness_when_off: '60'
+  indicator_brightness_when_offline_percent: "100"
+  default_indicator_on_with_dimmer: "false"
+  default_change_indicator_brightness_with_dimmer: "false"
+  default_indicator_brightness_when_on: "100"
+  default_indicator_brightness_when_off: "60"
 
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   project:
     name: "elegrp.DTR10-DTR30"
-    version: "1.3"
-  on_boot: 
+    version: "1.4"
+  on_boot:
     then:
       - delay: 3s
       - number.set:
@@ -144,6 +144,8 @@ text_sensor:
       out.append(buffer);
       return out;
     update_interval: 60s
+  - platform: uptime
+    name: "Uptime"
 
 button:
   - platform: restart
@@ -204,7 +206,7 @@ switch:
       - globals.set:
           id: change_indicator_brightness_with_dimmer_state
           value: "false"
-          
+
 
 number:
   # Non-Tuya Configuration Numbers
@@ -239,7 +241,7 @@ number:
     max_value: 100
     step: 1
     # TuyaMCU scale is 10 to 1000
-    multiply: 10 
+    multiply: 10
     web_server:
       sorting_weight: 0
   - platform: tuya
@@ -344,7 +346,7 @@ light:
     name: "Dimmer"
     id: dimmer
     dimmer_datapoint: 2
-    min_value_datapoint: 3
+    min_value_datapoint: 2
     max_value: 1000
     switch_datapoint: 1
     web_server:
