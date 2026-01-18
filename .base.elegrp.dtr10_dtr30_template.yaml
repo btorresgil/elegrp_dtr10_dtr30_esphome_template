@@ -19,8 +19,7 @@ esphome:
           id: dimmer_brightness_control
           value: 100
       # Set brightness to highest setting
-      - lambda: |-
-          id(id_tuya_device).force_set_integer_datapoint_value(2, 1000);
+      - number.to_max: dimmer_brightness_control
 
 bk72xx:
   board: cb2s
