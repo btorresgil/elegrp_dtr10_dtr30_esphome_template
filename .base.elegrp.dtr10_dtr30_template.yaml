@@ -11,13 +11,10 @@ esphome:
   friendly_name: ${device_friendly_name}
   project:
     name: "elegrp.DTR10-DTR30"
-    version: "1.4"
+    version: "1.5"
   on_boot:
     then:
       - delay: 3s
-      - number.set:
-          id: dimmer_brightness_control
-          value: 100
       # Set brightness to highest setting
       - number.to_max: dimmer_brightness_control
 
@@ -345,7 +342,7 @@ light:
     name: "Dimmer"
     id: dimmer
     dimmer_datapoint: 2
-    min_value_datapoint: 2
+    min_value: 10
     max_value: 1000
     switch_datapoint: 1
     web_server:
