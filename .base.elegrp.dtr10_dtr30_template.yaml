@@ -11,12 +11,12 @@ esphome:
   friendly_name: ${device_friendly_name}
   project:
     name: "elegrp.DTR10-DTR30"
-    version: "1.5"
+    version: "1.6"
   on_boot:
     then:
       - delay: 3s
       # Set brightness to highest setting
-      - number.to_max: dimmer_brightness_control
+      # - number.to_max: dimmer_brightness_control
 
 bk72xx:
   board: cb2s
